@@ -38,7 +38,7 @@ func walk(writer io.Writer, prefix string, name string, input map[string]interfa
 			}
 			fields = append(fields, fmt.Sprintf("%s : %s", key, b))
 		case float64:
-			fields = append(fields, fmt.Sprintf("%s : %f", key, val))
+			fields = append(fields, fmt.Sprintf("%s : %g", key, val))
 		case string:
 			fields = append(fields, fmt.Sprintf("%s : \\\"%s\\\"", key, val))
 		case nil:
@@ -47,7 +47,7 @@ func walk(writer io.Writer, prefix string, name string, input map[string]interfa
 			walk(writer, qualified_name, key, val)
 			fmt.Fprintf(writer, "%s -> %s [label=\"%s\"]\n", qualified_name, qualified_name+"_"+key, key)
 		case []interface{}:
-			log.Println("arrays not supported")
+			fmt.Fprintln(os.Stderr, "arrays not supported")
 		}
 	}
 
