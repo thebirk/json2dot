@@ -50,7 +50,8 @@ func generateGraph(writer io.Writer, prefix string, name string, input orderedma
 			generateGraph(writer, qualified_name, key, val)
 			fmt.Fprintf(writer, "%s -> %s [label=\"%s\"]\n", qualified_name, qualified_name+"_"+key, key)
 		case []interface{}:
-			fmt.Fprintln(os.Stderr, "arrays not supported")
+			fields = append(fields, fmt.Sprintf("%s : array", key))
+			fmt.Fprintf(os.Stderr, "Skipping key '%s'. Arrays are currently not supported. \n", key)
 		}
 	}
 
