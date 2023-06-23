@@ -18,7 +18,6 @@ type optionalStringFlag struct {
 func (flag *optionalStringFlag) Set(str string) error {
 	flag.set = true
 	flag.value = str
-
 	return nil
 }
 
@@ -57,13 +56,27 @@ func walk(writer io.Writer, prefix string, name string, input map[string]interfa
 
 var dotPreamble = flag.String("preamble", "", "Inject text into the output")
 var graphName = flag.String("name", "G", "Graph name")
-var outPath optionalStringFlag
+var outPathFlag optionalStringFlag
+var inPathFlag optionalStringFlag
+
+func printUsage() {
+	fmt.Printf("Usage: %s [options] [INPUT]\n", os.Args[0])
+	fmt.Println()
+	fmt.Println("Parameters:")
+	fmt.Println("  INPUT (optional) - Cannot be combined with '-in'")
+	fmt.Println("    \tInput file path")
+	fmt.Println()
+	fmt.Println("Options:")
+	flag.PrintDefaults()
+}
 
 func main() {
 	reader := os.Stdin
 	writer := os.Stdout
 
-	flag.Var(&outPath, "out", "Output file path")
+	flag.Usage = printUsage
+	flag.Var(&outPathFlag, "out", "Output file path")
+	flag.Var(&inPathFlag, "in", "Input file path")
 	flag.Parse()
 
 	inPath := ""
@@ -74,7 +87,17 @@ func main() {
 			os.Exit(1)
 		}
 
+		if inPathFlag.set {
+			fmt.Fprintln(os.Stderr, "Cannot use both positional argument in and '-in'")
+			flag.Usage()
+			os.Exit(2)
+		}
+
 		inPath = flag.Arg(0)
+	}
+
+	if inPathFlag.set {
+		inPath = inPathFlag.value
 	}
 
 	if inPath != "" {
@@ -91,9 +114,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if outPath.set {
+	if outPathFlag.set {
 		var err error
-		writer, err = os.OpenFile(outPath.value, os.O_CREATE|os.O_WRONLY, 0644)
+		writer, err = os.OpenFile(outPathFlag.value, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			panic(err)
 		}
