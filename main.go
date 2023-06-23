@@ -10,6 +10,22 @@ import (
 	"strings"
 )
 
+type optionalStringFlag struct {
+	set   bool
+	value string
+}
+
+func (flag *optionalStringFlag) Set(str string) error {
+	flag.set = true
+	flag.value = str
+
+	return nil
+}
+
+func (flag *optionalStringFlag) String() string {
+	return flag.value
+}
+
 func walk(writer io.Writer, prefix string, name string, input map[string]interface{}) {
 	var fields []string
 	qualified_name := fmt.Sprintf("%s_%s", prefix, name)
@@ -39,13 +55,35 @@ func walk(writer io.Writer, prefix string, name string, input map[string]interfa
 	fmt.Fprintf(writer, "%s [label=\"{ %s }\"]\n", qualified_name, strings.Join(fields, "|"))
 }
 
-var dotPreamble = flag.String("preamble", "", "")
-var graphName = flag.String("name", "G", "")
+var dotPreamble = flag.String("preamble", "", "Inject text into the output")
+var graphName = flag.String("name", "G", "Graph name")
+var outPath optionalStringFlag
 
 func main() {
 	reader := os.Stdin
 	writer := os.Stdout
+
+	flag.Var(&outPath, "out", "Output file path")
 	flag.Parse()
+
+	inPath := ""
+	if flag.NArg() > 0 {
+		if flag.NArg() != 1 {
+			fmt.Fprintln(os.Stderr, "Too many positional arguments")
+			flag.Usage()
+			os.Exit(1)
+		}
+
+		inPath = flag.Arg(0)
+	}
+
+	if inPath != "" {
+		var err error
+		reader, err = os.Open(inPath)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	var input map[string]interface{}
 	err := json.NewDecoder(reader).Decode(&input)
@@ -53,9 +91,19 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	if outPath.set {
+		var err error
+		writer, err = os.OpenFile(outPath.value, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	fmt.Fprintf(writer, "digraph %s {\n", *graphName)
 	fmt.Fprintf(writer, "node [shape=record];\n")
-	fmt.Fprintln(writer, *dotPreamble)
+	if *dotPreamble != "" {
+		fmt.Fprintln(writer, *dotPreamble)
+	}
 	walk(writer, "", "N", input)
 	fmt.Fprintf(writer, "}\n")
 }
