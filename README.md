@@ -21,8 +21,7 @@ Support array type.
 ## Installation
 
 ```bash
-go get github.com/thebirk/json2dot
-go install github.com/thebirk/json2dot
+go install github.com/thebirk/json2dot@latest
 ```
 
 > Make sure `$GOPATH/bin` is in your `$PATH`
